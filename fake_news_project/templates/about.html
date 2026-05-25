@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TruthGuard — About</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+
+  <div class="bg-grid"></div>
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+
+  <header>
+    <div class="logo">
+      <span class="logo-icon">◈</span>
+      <a href="/" style="text-decoration:none;color:inherit;">TruthGuard</a>
+    </div>
+    <nav>
+      <a href="/how-it-works" data-i18n="nav_how">How it works</a>
+      <a href="/about" class="nav-active" data-i18n="nav_about">About</a>
+      <a href="/api/detect" target="_blank" class="nav-api" data-i18n="nav_api">API</a>
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <section class="page-hero">
+    <div class="hero-label" data-i18n="about_page_label">Methodology</div>
+    <h1><span data-i18n="about_page_h1a">How</span> <em data-i18n="about_page_h1b">TruthGuard</em> <span data-i18n="about_page_h1c">works</span></h1>
+    <p class="hero-sub" data-i18n="about_page_sub">A look inside the pipeline that turns raw text into a trustworthy verdict.</p>
+  </section>
+
+  <!-- Pipeline steps -->
+  <section class="hiw-pipeline">
+    <div class="pipeline-line"></div>
+
+    <div class="pipeline-step">
+      <div class="ps-num">01</div>
+      <div class="ps-body">
+        <h2 data-i18n="hiw_s1_title">Text Ingestion</h2>
+        <p data-i18n="hiw_s1_p">When you paste text into TruthGuard, it's immediately cleaned and normalised. HTML tags, excess whitespace, and encoding artefacts are stripped away. What remains is the raw linguistic signal — the vocabulary, sentence structure, and rhetorical patterns that actually matter to the model.</p>
+        <div class="ps-detail">
+          <div class="ps-chip">Tokenisation</div>
+          <div class="ps-chip">Noise removal</div>
+          <div class="ps-chip">Unicode normalisation</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipeline-step">
+      <div class="ps-num">02</div>
+      <div class="ps-body">
+        <h2 data-i18n="hiw_s2_title">Model Inference</h2>
+        <p data-i18n="hiw_s2_p">The cleaned text is passed through a fine-tuned transformer model. Unlike simple keyword matching, the model reads context — it understands that the same word can carry different meaning depending on what surrounds it. It looks for hallmarks of misinformation: emotional amplification, unverified superlatives, logical gaps, and source inconsistencies.</p>
+        <div class="ps-detail">
+          <div class="ps-chip">Transformer architecture</div>
+          <div class="ps-chip">Contextual embeddings</div>
+          <div class="ps-chip">Semantic analysis</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipeline-step">
+      <div class="ps-num">03</div>
+      <div class="ps-body">
+        <h2 data-i18n="hiw_s3_title">Confidence Scoring</h2>
+        <p data-i18n="hiw_s3_p">The model doesn't just output a binary label. It produces a probability distribution across both classes — FAKE and REAL. The confidence score tells you how certain the model is. A 95% FAKE score is very different from a 55% FAKE score, and TruthGuard surfaces that distinction clearly.</p>
+        <div class="ps-detail">
+          <div class="ps-chip">Softmax probability</div>
+          <div class="ps-chip">Dual-class scoring</div>
+          <div class="ps-chip">Interpretable output</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipeline-step">
+      <div class="ps-num">04</div>
+      <div class="ps-body">
+        <h2 data-i18n="hiw_s4_title">Result Delivery</h2>
+        <p data-i18n="hiw_s4_p">The verdict is returned via a simple JSON response and rendered live in the interface. The same response is available through the REST API, so you can integrate TruthGuard into your own apps, browser extensions, or content moderation pipelines.</p>
+        <div class="ps-detail">
+          <div class="ps-chip">REST API</div>
+          <div class="ps-chip">JSON response</div>
+          <div class="ps-chip">Live UI update</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- What the model looks for -->
+  <section class="hiw-signals">
+    <div class="section-label" data-i18n="signals_label">SIGNAL TYPES</div>
+    <h2 data-i18n="signals_h2">What the model looks for</h2>
+    <div class="signals-grid">
+      <div class="signal-card">
+        <div class="signal-icon fake-signal">⚡</div>
+        <h3 data-i18n="sig1_title">Emotional language</h3>
+        <p data-i18n="sig1_desc">Sensational adjectives, all-caps words, and extreme superlatives that aim to provoke rather than inform.</p>
+      </div>
+      <div class="signal-card">
+        <div class="signal-icon fake-signal">⊘</div>
+        <h3 data-i18n="sig2_title">Vague sourcing</h3>
+        <p data-i18n="sig2_desc">Claims attributed to unnamed experts, anonymous insiders, or unverifiable studies with no citations.</p>
+      </div>
+      <div class="signal-card">
+        <div class="signal-icon fake-signal">↯</div>
+        <h3 data-i18n="sig3_title">Logical inconsistency</h3>
+        <p data-i18n="sig3_desc">Contradictions within the same article, or conclusions that don't follow from the stated premises.</p>
+      </div>
+      <div class="signal-card">
+        <div class="signal-icon real-signal">✓</div>
+        <h3 data-i18n="sig4_title">Neutral tone</h3>
+        <p data-i18n="sig4_desc">Measured, factual language that presents evidence without telling the reader how to feel about it.</p>
+      </div>
+      <div class="signal-card">
+        <div class="signal-icon real-signal">◎</div>
+        <h3 data-i18n="sig5_title">Verifiable claims</h3>
+        <p data-i18n="sig5_desc">Specific figures, named sources, dates, and institutions that can be cross-referenced independently.</p>
+      </div>
+      <div class="signal-card">
+        <div class="signal-icon real-signal">≡</div>
+        <h3 data-i18n="sig6_title">Structured reporting</h3>
+        <p data-i18n="sig6_desc">Consistent narrative structure that follows journalistic conventions: who, what, when, where, why.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Limitations -->
+  <section class="hiw-limits">
+    <div class="section-label" data-i18n="limits_label">LIMITATIONS</div>
+    <h2 data-i18n="limits_h2">What to keep in mind</h2>
+    <div class="limits-grid">
+      <div class="limit-item">
+        <span class="limit-num">—</span>
+        <p data-i18n="limit1">TruthGuard is a tool, not an authority. Always cross-reference important claims with trusted sources.</p>
+      </div>
+      <div class="limit-item">
+        <span class="limit-num">—</span>
+        <p data-i18n="limit2">The model performs best on English-language news text. Results on other languages or genres may vary.</p>
+      </div>
+      <div class="limit-item">
+        <span class="limit-num">—</span>
+        <p data-i18n="limit3">Short texts (under ~50 words) give the model less signal and may produce lower-confidence results.</p>
+      </div>
+      <div class="limit-item">
+        <span class="limit-num">—</span>
+        <p data-i18n="limit4">Sophisticated disinformation that mimics neutral journalistic style may score closer to the boundary.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="page-cta">
+    <h2 data-i18n="cta_h2">Ready to try it?</h2>
+    <p data-i18n="cta_p">Paste any article or headline into the detector and get a verdict in seconds.</p>
+    <a href="/" class="cta-btn" data-i18n="cta_btn">Go to detector →</a>
+  </section>
+
+  <footer>
+    <div class="footer-logo">◈ TruthGuard</div>
+    <p data-i18n="footer_p">Powered by your trained model · Flask REST API · Built with intent</p>
+  </footer>
+
+  <script src="{{ url_for('static', filename='i18n.js') }}"></script>
+</body>
+</html>

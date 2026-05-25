@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TruthGuard — AI Media Detector</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <style>
+    /* ── Media Detector Specific Styles ── */
+
+    .media-hero {
+      text-align: center;
+      padding: 6rem 2rem 3rem;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .media-hero .hero-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      color: var(--accent, #a78bfa);
+      text-transform: uppercase;
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .media-hero .hero-label::before,
+    .media-hero .hero-label::after {
+      content: '';
+      height: 1px;
+      width: 2rem;
+      background: var(--accent, #a78bfa);
+      opacity: 0.5;
+    }
+    .media-hero h1 { font-family: 'Syne', sans-serif; font-size: clamp(2.4rem, 5vw, 3.8rem); font-weight: 800; line-height: 1.08; margin-bottom: 1rem; }
+    .media-hero h1 em { font-style: normal; color: var(--accent, #a78bfa); }
+    .media-hero .hero-sub { color: rgba(255,255,255,0.55); font-size: 1.05rem; line-height: 1.6; max-width: 480px; margin: 0 auto; }
+
+    /* ── Upload Zone ── */
+    .upload-wrapper {
+      max-width: 780px;
+      margin: 0 auto 3rem;
+      padding: 0 1.5rem;
+    }
+    .upload-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+    }
+    .upload-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.4rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .upload-tag {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.14em;
+      color: rgba(255,255,255,0.35);
+      text-transform: uppercase;
+    }
+    .upload-modes {
+      display: flex;
+      gap: 0.4rem;
+    }
+    .mode-btn {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: transparent;
+      color: rgba(255,255,255,0.45);
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.05em;
+    }
+    .mode-btn.active {
+      background: rgba(167, 139, 250, 0.15);
+      border-color: rgba(167, 139, 250, 0.4);
+      color: #a78bfa;
+    }
+
+    /* ── Drop Zone ── */
+    .drop-zone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      padding: 3rem 2rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      min-height: 220px;
+      position: relative;
+    }
+    .drop-zone.drag-over {
+      background: rgba(167, 139, 250, 0.06);
+    }
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .drop-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      border: 1.5px solid rgba(167, 139, 250, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      background: rgba(167, 139, 250, 0.08);
+      transition: all 0.2s;
+    }
+    .drop-zone:hover .drop-icon,
+    .drop-zone.drag-over .drop-icon {
+      border-color: rgba(167, 139, 250, 0.7);
+      background: rgba(167, 139, 250, 0.15);
+      transform: scale(1.05);
+    }
+    .drop-label {
+      text-align: center;
+    }
+    .drop-label strong {
+      display: block;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      color: rgba(255,255,255,0.85);
+      margin-bottom: 0.3rem;
+    }
+    .drop-label span {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.35);
+    }
+
+    /* ── Preview ── */
+    .file-preview {
+      display: none;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.4rem;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.02);
+    }
+    .file-preview.visible { display: flex; }
+    .preview-thumb {
+      width: 52px;
+      height: 52px;
+      border-radius: 10px;
+      object-fit: cover;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .preview-thumb .video-icon { font-size: 1.4rem; }
+    .preview-info { flex: 1; min-width: 0; }
+    .preview-name {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.8);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 0.2rem;
+    }
+    .preview-meta {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      color: rgba(255,255,255,0.3);
+    }
+    .preview-remove {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.3);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0.25rem;
+      transition: color 0.2s;
+    }
+    .preview-remove:hover { color: rgba(255,255,255,0.7); }
+
+    /* ── Card Footer ── */
+    .upload-card-footer {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 1.4rem;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    /* ── Result Panel ── */
+    .media-result {
+      display: none;
+      margin-top: 1.5rem;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.025);
+      animation: fadeUp 0.4s ease;
+    }
+    .media-result.visible { display: block; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+      padding: 1.4rem 1.6rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .verdict-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1.1rem;
+      border-radius: 999px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.9rem;
+      letter-spacing: 0.05em;
+    }
+    .verdict-chip.is-ai {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #f87171;
+    }
+    .verdict-chip.is-real {
+      background: rgba(52, 211, 153, 0.12);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      color: #34d399;
+    }
+    .verdict-chip.is-uncertain {
+      background: rgba(251, 191, 36, 0.12);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      color: #fbbf24;
+    }
+
+    .result-conf-block {
+      margin-left: auto;
+      text-align: right;
+    }
+    .result-conf-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.3);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.2rem;
+    }
+    .result-conf-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .result-body { padding: 1.4rem 1.6rem; display: flex; flex-direction: column; gap: 1.2rem; }
+
+    /* Score bars */
+    .score-section {}
+    .score-section .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.6rem;
+    }
+    .score-section .bar-lbl {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      color: rgba(255,255,255,0.4);
+      width: 5.5rem;
+      flex-shrink: 0;
+    }
+    .score-section .bar-track {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.06);
+      overflow: hidden;
+    }
+    .score-section .bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.8s cubic-bezier(.16,1,.3,1);
+      width: 0;
+    }
+    .ai-fill   { background: linear-gradient(90deg, #f87171, #ef4444); }
+    .auth-fill { background: linear-gradient(90deg, #34d399, #10b981); }
+    .score-section .bar-pct {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.5);
+      width: 3.5rem;
+      text-align: right;
+    }
+
+    /* Reasoning */
+    .reasoning-block {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+      padding: 0.9rem 1.1rem;
+    }
+    .reasoning-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.3);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+    }
+    .reasoning-text {
+      font-size: 0.88rem;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.55;
+    }
+
+    /* Signals */
+    .signals-block {}
+    .signals-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.3);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.65rem;
+    }
+    .signal-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+    .signal-tag {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      padding: 0.28rem 0.65rem;
+      border-radius: 6px;
+      background: rgba(167, 139, 250, 0.08);
+      border: 1px solid rgba(167, 139, 250, 0.2);
+      color: rgba(167, 139, 250, 0.85);
+      line-height: 1.4;
+    }
+    .signal-tag.red {
+      background: rgba(239, 68, 68, 0.08);
+      border-color: rgba(239, 68, 68, 0.2);
+      color: rgba(248, 113, 113, 0.9);
+    }
+    .no-signals {
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.3);
+      font-style: italic;
+    }
+
+    /* Meta row */
+    .result-meta-row {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .result-meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+    .result-meta-item span {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.7);
+      font-weight: 500;
+    }
+    .result-meta-item small {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.62rem;
+      color: rgba(255,255,255,0.28);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* Frame breakdown */
+    .frames-section {}
+    .frames-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.3);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.75rem;
+    }
+    .frames-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 0.65rem;
+    }
+    .frame-card {
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.03);
+      overflow: hidden;
+      font-family: 'DM Mono', monospace;
+    }
+    .frame-card-bar {
+      height: 3px;
+    }
+    .frame-card-bar.ai    { background: #ef4444; }
+    .frame-card-bar.auth  { background: #10b981; }
+    .frame-card-bar.unc   { background: #f59e0b; }
+    .frame-card-body {
+      padding: 0.55rem 0.65rem;
+    }
+    .frame-ts {
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.3);
+      margin-bottom: 0.2rem;
+    }
+    .frame-verdict {
+      font-size: 0.72rem;
+      font-weight: 500;
+    }
+    .frame-verdict.ai   { color: #f87171; }
+    .frame-verdict.auth { color: #34d399; }
+    .frame-verdict.unc  { color: #fbbf24; }
+    .frame-score {
+      font-size: 0.68rem;
+      color: rgba(255,255,255,0.35);
+      margin-top: 0.15rem;
+    }
+
+    /* Metadata block */
+    .metadata-block {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .metadata-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.7rem 1rem;
+      cursor: pointer;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      color: rgba(255,255,255,0.35);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      user-select: none;
+    }
+    .metadata-toggle:hover { color: rgba(255,255,255,0.55); }
+    .metadata-chevron { transition: transform 0.2s; }
+    .metadata-toggle.open .metadata-chevron { transform: rotate(180deg); }
+    .metadata-content { display: none; padding: 0 1rem 0.8rem; }
+    .metadata-content.open { display: block; }
+    .metadata-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      padding: 0.3rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .metadata-row:last-child { border-bottom: none; }
+    .metadata-key {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      color: rgba(255,255,255,0.3);
+    }
+    .metadata-val {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.6);
+      text-align: right;
+      word-break: break-all;
+    }
+
+    /* Source badge */
+    .source-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.63rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 5px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.3);
+    }
+
+    /* Loading spinner */
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.15);
+      border-top-color: #a78bfa;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    .spinner.visible { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Error panel */
+    .media-error {
+      display: none;
+      margin-top: 1rem;
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.8rem;
+    }
+    .media-error.visible { display: block; }
+
+    /* Disclaimer */
+    .media-disclaimer {
+      max-width: 780px;
+      margin: 0 auto 5rem;
+      padding: 0 1.5rem;
+    }
+    .disclaimer-card {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem 1.2rem;
+      border-radius: 12px;
+      background: rgba(251, 191, 36, 0.05);
+      border: 1px solid rgba(251, 191, 36, 0.15);
+    }
+    .disclaimer-icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .disclaimer-text {
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.55;
+    }
+    .disclaimer-text strong {
+      color: rgba(251, 191, 36, 0.7);
+      font-weight: 600;
+    }
+
+    /* How it works mini */
+    .media-hiw {
+      max-width: 780px;
+      margin: 0 auto 4rem;
+      padding: 0 1.5rem;
+    }
+    .media-hiw-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      color: rgba(255,255,255,0.3);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      margin-bottom: 1.2rem;
+    }
+    .hiw-mini-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.75rem;
+    }
+    .hiw-mini-card {
+      padding: 1.1rem;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .hiw-mini-num {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      color: rgba(167, 139, 250, 0.6);
+      margin-bottom: 0.5rem;
+    }
+    .hiw-mini-card h4 {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 0.35rem;
+      color: rgba(255,255,255,0.85);
+    }
+    .hiw-mini-card p {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.38);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-grid"></div>
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+
+  <header>
+    <div class="logo">
+      <span class="logo-icon">◈</span>
+      <a href="/" style="text-decoration:none;color:inherit;">TruthGuard</a>
+    </div>
+    <nav>
+      <a href="/" data-i18n="nav_text">Text Detector</a>
+      <a href="/media-detect" class="nav-active" data-i18n="nav_media">Media Detector</a>
+      <a href="/how-it-works" data-i18n="nav_how">How it works</a>
+      <a href="/about" data-i18n="nav_about">About</a>
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <section class="media-hero">
+    <div class="hero-label" data-i18n="media_hero_label">AI Vision Analysis</div>
+    <h1><span data-i18n="media_hero_h1a">Is this image or video</span><br /><em data-i18n="media_hero_h1b">AI-generated?</em></h1>
+    <p class="hero-sub" data-i18n="media_hero_sub">Upload any image or video. TruthGuard analyses metadata, pixel patterns, and uses Gemini Vision to detect synthetic media.</p>
+  </section>
+
+  <!-- Upload Card -->
+  <section class="upload-wrapper">
+    <div class="upload-card">
+
+      <div class="upload-card-header">
+        <span class="upload-tag" data-i18n="media_upload_tag">Media Upload</span>
+        <div class="upload-modes">
+          <button class="mode-btn active" id="modeImage" onclick="setMode('image')" data-i18n="media_img_mode">🖼 Image</button>
+          <button class="mode-btn" id="modeVideo" onclick="setMode('video')" data-i18n="media_vid_mode">🎬 Video</button>
+        </div>
+      </div>
+
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" accept="image/*" onchange="handleFile(this.files[0])" />
+        <div class="drop-icon" id="dropIcon">🖼</div>
+        <div class="drop-label">
+          <strong data-i18n="media_drop_strong">Drop your file here, or click to browse</strong>
+          <span id="dropHint">JPG, PNG, WebP, GIF — max 50 MB</span>
+        </div>
+      </div>
+
+      <div class="file-preview" id="filePreview">
+        <div class="preview-thumb" id="previewThumb"></div>
+        <div class="preview-info">
+          <div class="preview-name" id="previewName">—</div>
+          <div class="preview-meta" id="previewMeta">—</div>
+        </div>
+        <button class="preview-remove" onclick="clearFile()" title="Remove file">✕</button>
+      </div>
+
+      <div class="upload-card-footer">
+        <button class="btn-analyse" id="analyseBtn" onclick="analyseMedia()" disabled>
+          <span class="btn-text" data-i18n="btn_analyse_media">Analyse Media</span>
+          <span class="btn-icon">→</span>
+        </button>
+        <div class="spinner" id="spinner"></div>
+        <button class="btn-clear" onclick="clearAll()" data-i18n="btn_clear">Clear</button>
+      </div>
+
+    </div>
+
+    <!-- Error -->
+    <div class="media-error" id="mediaError"></div>
+
+    <!-- Result -->
+    <div class="media-result" id="mediaResult">
+      <div class="result-header">
+        <div class="verdict-chip" id="verdictChip">
+          <span id="verdictIcon">?</span>
+          <span id="verdictText">Analysing…</span>
+        </div>
+        <span class="source-badge" id="sourceBadge">—</span>
+        <div class="result-conf-block">
+          <div class="result-conf-label" data-i18n="conf_label">Confidence</div>
+          <div class="result-conf-value" id="confValue">—</div>
+        </div>
+      </div>
+
+      <div class="result-body">
+
+        <!-- Score bars -->
+        <div class="score-section">
+          <div class="bar-row">
+            <span class="bar-lbl">AI-Generated</span>
+            <div class="bar-track"><div class="bar-fill ai-fill" id="aiBar"></div></div>
+            <span class="bar-pct" id="aiPct">—</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-lbl">Authentic</span>
+            <div class="bar-track"><div class="bar-fill auth-fill" id="authBar"></div></div>
+            <span class="bar-pct" id="authPct">—</span>
+          </div>
+        </div>
+
+        <!-- Reasoning -->
+        <div class="reasoning-block" id="reasoningBlock" style="display:none">
+          <div class="reasoning-label">Analysis</div>
+          <div class="reasoning-text" id="reasoningText">—</div>
+        </div>
+
+        <!-- Signals -->
+        <div class="signals-block">
+          <div class="signals-label">Detected Signals</div>
+          <div class="signal-tags" id="signalTags"></div>
+        </div>
+
+        <!-- Meta row -->
+        <div class="result-meta-row">
+          <div class="result-meta-item">
+            <span id="metaType">—</span><small>Type</small>
+          </div>
+          <div class="result-meta-item">
+            <span id="metaSize">—</span><small>File Size</small>
+          </div>
+          <div class="result-meta-item" id="metaFramesWrap" style="display:none">
+            <span id="metaFrames">—</span><small>Frames Analysed</small>
+          </div>
+          <div class="result-meta-item" id="metaAiFramesWrap" style="display:none">
+            <span id="metaAiFrames">—</span><small>AI-Flagged Frames</small>
+          </div>
+          <div class="result-meta-item" id="metaDimsWrap" style="display:none">
+            <span id="metaDims">—</span><small>Dimensions</small>
+          </div>
+        </div>
+
+        <!-- Video frame breakdown -->
+        <div class="frames-section" id="framesSection" style="display:none">
+          <div class="frames-label">Frame-by-frame Breakdown</div>
+          <div class="frames-grid" id="framesGrid"></div>
+        </div>
+
+        <!-- Image metadata -->
+        <div class="metadata-block" id="metadataBlock" style="display:none">
+          <div class="metadata-toggle" id="metadataToggle" onclick="toggleMeta()">
+            <span>Raw Metadata</span>
+            <span class="metadata-chevron">▾</span>
+          </div>
+          <div class="metadata-content" id="metadataContent"></div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works mini -->
+  <section class="media-hiw">
+    <div class="media-hiw-title" data-i18n="media_hiw_label">How media detection works</div>
+    <div class="hiw-mini-grid">
+      <div class="hiw-mini-card">
+        <div class="hiw-mini-num">01</div>
+        <h4 data-i18n="media_h01">Metadata Inspection</h4>
+        <p data-i18n="media_p01">EXIF data, software tags, PNG chunks, and resolution patterns are scanned for AI-generator fingerprints.</p>
+      </div>
+      <div class="hiw-mini-card">
+        <div class="hiw-mini-num">02</div>
+        <h4 data-i18n="media_h02">Pixel Analysis</h4>
+        <p data-i18n="media_p02">Error Level Analysis (ELA) and texture variance checks flag unnaturally smooth or uniform regions typical of diffusion models.</p>
+      </div>
+      <div class="hiw-mini-card">
+        <div class="hiw-mini-num">03</div>
+        <h4 data-i18n="media_h03">Gemini Vision</h4>
+        <p data-i18n="media_p03">Google's multimodal AI analyses visual anomalies — garbled text, impossible geometry, skin artifacts, deepfake boundaries.</p>
+      </div>
+      <div class="hiw-mini-card">
+        <div class="hiw-mini-num">04</div>
+        <h4 data-i18n="media_h04">Frame Sampling (Video)</h4>
+        <p data-i18n="media_p04">Six evenly-spaced frames are extracted and analysed individually. Aggregate AI score is averaged across all frames.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Disclaimer -->
+  <section class="media-disclaimer">
+    <div class="disclaimer-card">
+      <span class="disclaimer-icon">⚠</span>
+      <p class="disclaimer-text" data-i18n="disclaimer_text" data-i18n-html>
+        <strong>Important:</strong> AI media detection is an evolving science. Results should be treated as one signal among many — not definitive proof. High-quality AI images can fool detectors; heavily compressed real photos may trigger false positives. Always cross-reference with contextual research and reverse image search.
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-logo">◈ TruthGuard</div>
+    <p data-i18n="footer_p">Powered by your trained model · Flask REST API · Built with intent</p>
+  </footer>
+
+  <script src="{{ url_for('static', filename='media_script.js') }}"></script>
+  <script src="{{ url_for('static', filename='i18n.js') }}"></script>
+</body>
+</html>

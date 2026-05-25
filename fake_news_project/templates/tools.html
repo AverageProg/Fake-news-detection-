@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TruthGuard — Tools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <style>
+    /* ── Tools page layout ──────────────────────────────── */
+    .tools-hero {
+      padding: 9rem 3rem 3rem;
+      text-align: center;
+      position: relative; z-index: 1;
+    }
+    .tools-hero h1 {
+      font-family: var(--font-head);
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      margin-bottom: 0.75rem;
+    }
+    .tools-hero h1 em { color: var(--accent); font-style: normal; }
+    .tools-hero p { color: var(--text-mid); font-size: 1.05rem; max-width: 520px; margin: 0 auto; }
+
+    .tools-tabs {
+      display: flex; justify-content: center; gap: 0.5rem;
+      padding: 2rem 3rem 0;
+      position: relative; z-index: 1;
+    }
+    .tool-tab {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      letter-spacing: 0.06em;
+      padding: 0.55rem 1.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--border2);
+      background: transparent;
+      color: var(--text-mid);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tool-tab.active, .tool-tab:hover {
+      background: var(--accent);
+      color: var(--bg);
+      border-color: var(--accent);
+    }
+
+    .tool-panels { padding: 2.5rem 3rem 5rem; max-width: 860px; margin: 0 auto; position: relative; z-index: 1; }
+    .tool-panel { display: none; }
+    .tool-panel.active { display: block; }
+
+    /* ── Shared card ─────────────────────────────────────── */
+    .tcard {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+    }
+    .tcard-title {
+      font-family: var(--font-head);
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 1.25rem;
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    .tcard-title .t-icon { font-size: 1.2rem; }
+
+    /* ── URL input ───────────────────────────────────────── */
+    .url-input-row {
+      display: flex; gap: 0.75rem; align-items: stretch;
+    }
+    .url-input-row input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.88rem;
+      padding: 0.75rem 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .url-input-row input:focus { border-color: var(--accent); }
+    .url-input-row input::placeholder { color: var(--text-dim); }
+
+    /* ── Profile form ────────────────────────────────────── */
+    .profile-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .profile-form .full { grid-column: 1 / -1; }
+    .field-label {
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+      letter-spacing: 0.07em;
+      color: var(--text-dim);
+      margin-bottom: 0.4rem;
+    }
+    .profile-form input,
+    .profile-form textarea,
+    .profile-form select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      padding: 0.7rem 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      resize: vertical;
+    }
+    .profile-form input:focus,
+    .profile-form textarea:focus,
+    .profile-form select:focus { border-color: var(--accent); }
+    .profile-form input::placeholder,
+    .profile-form textarea::placeholder { color: var(--text-dim); }
+    .profile-form select option { background: var(--surface2); }
+
+    /* ── Analyse button ──────────────────────────────────── */
+    .btn-tool {
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      border-radius: 10px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      padding: 0.75rem 1.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .btn-tool:hover { background: #33ecff; transform: translateY(-1px); }
+    .btn-tool:disabled { opacity: 0.45; pointer-events: none; }
+    .btn-tool-row { display: flex; justify-content: flex-end; margin-top: 1.25rem; }
+
+    /* ── Spinner ─────────────────────────────────────────── */
+    .tool-spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(0,0,0,0.2);
+      border-top-color: var(--bg);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    .tool-spinner.visible { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Result panel ────────────────────────────────────── */
+    .tool-result {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.75rem;
+      display: none;
+    }
+    .tool-result.visible { display: block; }
+
+    .verdict-row-tool {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; flex-wrap: wrap;
+      margin-bottom: 1.25rem;
+    }
+    .verdict-chip-tool {
+      display: flex; align-items: center; gap: 0.55rem;
+      padding: 0.55rem 1.25rem;
+      border-radius: 999px;
+      font-family: var(--font-head);
+      font-weight: 800;
+      font-size: 1rem;
+      letter-spacing: 0.02em;
+    }
+    .chip-danger  { background: rgba(255,61,90,0.15);  color: var(--fake); border: 1px solid rgba(255,61,90,0.3); }
+    .chip-safe    { background: rgba(0,229,160,0.12);  color: var(--real); border: 1px solid rgba(0,229,160,0.25); }
+    .chip-warn    { background: rgba(255,209,102,0.12); color: var(--yellow); border: 1px solid rgba(255,209,102,0.25); }
+
+    .conf-block-tool { text-align: right; }
+    .conf-block-tool .clabel { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 0.08em; }
+    .conf-block-tool .cval { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--text); }
+
+    /* Score bars */
+    .score-section { margin-bottom: 1.25rem; }
+    .score-title { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 0.6rem; }
+    .bar-row-t { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.4rem; }
+    .bar-lbl-t { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); width: 80px; flex-shrink: 0; }
+    .bar-track-t { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .bar-fill-t { height: 100%; border-radius: 3px; width: 0; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+    .danger-fill { background: var(--fake); }
+    .warn-fill   { background: var(--yellow); }
+    .safe-fill   { background: var(--real); }
+    .bar-pct-t { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-mid); width: 38px; text-align: right; }
+
+    /* Reasoning */
+    .reasoning-block {
+      background: rgba(0,229,255,0.04);
+      border: 1px solid rgba(0,229,255,0.12);
+      border-radius: 10px;
+      padding: 1rem 1.1rem;
+      font-size: 0.9rem;
+      color: var(--text-mid);
+      line-height: 1.6;
+      margin-bottom: 1.25rem;
+    }
+    .reasoning-block strong { color: var(--text); display: block; margin-bottom: 0.3rem; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; }
+
+    /* Signals */
+    .signals-section .score-title { margin-bottom: 0.6rem; }
+    .signal-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .stag {
+      font-family: var(--font-mono); font-size: 0.75rem;
+      padding: 0.3rem 0.8rem; border-radius: 6px;
+    }
+    .stag-danger { background: rgba(255,61,90,0.12); color: var(--fake); border: 1px solid rgba(255,61,90,0.2); }
+    .stag-warn   { background: rgba(255,209,102,0.1); color: var(--yellow); border: 1px solid rgba(255,209,102,0.2); }
+    .stag-safe   { background: rgba(0,229,160,0.1); color: var(--real); border: 1px solid rgba(0,229,160,0.2); }
+    .no-signals  { color: var(--text-dim); font-size: 0.85rem; }
+
+    /* URL breakdown */
+    .url-breakdown {
+      margin-bottom: 1.25rem;
+    }
+    .url-parts { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+    .url-part {
+      font-family: var(--font-mono); font-size: 0.75rem;
+      padding: 0.25rem 0.7rem; border-radius: 5px;
+      background: var(--surface); border: 1px solid var(--border);
+    }
+    .url-part .pk { color: var(--text-dim); }
+    .url-part .pv { color: var(--accent); }
+    .url-part.flagged .pv { color: var(--fake); }
+
+    /* Profile field display */
+    .profile-summary {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 0.75rem; margin-bottom: 1.25rem;
+    }
+    .ps-item {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 9px;
+      padding: 0.65rem 0.9rem;
+    }
+    .ps-item .ps-k { font-family: var(--font-mono); font-size: 0.67rem; color: var(--text-dim); letter-spacing: 0.07em; margin-bottom: 0.2rem; }
+    .ps-item .ps-v { font-size: 0.88rem; color: var(--text); word-break: break-word; }
+
+    /* Error */
+    .tool-error {
+      background: rgba(255,61,90,0.08);
+      border: 1px solid rgba(255,61,90,0.2);
+      color: var(--fake);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      font-size: 0.9rem;
+      display: none;
+      margin-top: 1rem;
+    }
+    .tool-error.visible { display: block; }
+
+    @media (max-width: 600px) {
+      .tools-tabs { flex-direction: column; align-items: stretch; padding: 1.5rem 1.25rem 0; }
+      .tool-panels { padding: 1.5rem 1.25rem 4rem; }
+      .url-input-row { flex-direction: column; }
+      .profile-form { grid-template-columns: 1fr; }
+      .profile-form .full { grid-column: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+
+  <header>
+    <div class="logo">
+      <span class="logo-icon">◈</span>
+      <a href="/" style="text-decoration:none;color:inherit;">TruthGuard</a>
+    </div>
+    <nav>
+      <a href="/media-detect">Media Detector</a>
+      <a href="/tools" class="nav-active">Tools</a>
+      <a href="/how-it-works">How it works</a>
+      <a href="/about">About</a>
+      <a href="/api/detect" target="_blank" class="nav-api">API</a>
+    </nav>
+  </header>
+
+  <section class="tools-hero">
+    <div class="hero-label">INVESTIGATIVE TOOLS</div>
+    <h1>Detect <em>fake links</em><br>& <em>fake profiles</em></h1>
+    <p>Two targeted tools for spotting phishing URLs and bot/fake social accounts before they cause harm.</p>
+  </section>
+
+  <div class="tools-tabs">
+    <button class="tool-tab active" onclick="switchTab('link')">🔗 Fake Link Detector</button>
+    <button class="tool-tab" onclick="switchTab('profile')">👤 Fake Profile Identifier</button>
+  </div>
+
+  <div class="tool-panels">
+
+    <!-- ═══════════════════ LINK DETECTOR ═══════════════════ -->
+    <div class="tool-panel active" id="panel-link">
+      <div class="tcard">
+        <div class="tcard-title"><span class="t-icon">🔗</span> Fake Link / Phishing URL Detector</div>
+
+        <div class="url-input-row">
+          <input type="text" id="urlInput" placeholder="https://example-login.secure-bank.xyz/verify?token=abc123"
+                 onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter')analyseLink()" />
+          <button class="btn-tool" id="linkBtn" onclick="analyseLink()">
+            <div class="tool-spinner" id="linkSpinner"></div>
+            <span class="btn-text" id="linkBtnText">Scan URL →</span>
+          </button>
+        </div>
+        <p style="margin-top:0.6rem;font-size:0.8rem;color:var(--text-dim);">Paste any URL — shortened links, suspicious emails, social media DMs. Nothing is visited or opened.</p>
+
+        <div class="tool-error" id="linkError"></div>
+      </div>
+
+      <!-- Link result -->
+      <div class="tool-result" id="linkResult">
+        <div class="verdict-row-tool">
+          <div class="verdict-chip-tool" id="linkChip">
+            <span id="linkChipIcon">?</span>
+            <span id="linkChipText">–</span>
+          </div>
+          <div class="conf-block-tool">
+            <div class="clabel">RISK SCORE</div>
+            <div class="cval" id="linkConf">–</div>
+          </div>
+        </div>
+
+        <div class="url-breakdown">
+          <div class="score-title">URL BREAKDOWN</div>
+          <div class="url-parts" id="urlParts"></div>
+        </div>
+
+        <div class="score-section">
+          <div class="score-title">RISK INDICATORS</div>
+          <div class="bar-row-t">
+            <span class="bar-lbl-t">PHISHING</span>
+            <div class="bar-track-t"><div class="bar-fill-t danger-fill" id="phishBar"></div></div>
+            <span class="bar-pct-t" id="phishPct">–</span>
+          </div>
+          <div class="bar-row-t">
+            <span class="bar-lbl-t">SUSPICIOUS</span>
+            <div class="bar-track-t"><div class="bar-fill-t warn-fill" id="suspBar"></div></div>
+            <span class="bar-pct-t" id="suspPct">–</span>
+          </div>
+          <div class="bar-row-t">
+            <span class="bar-lbl-t">LEGITIMATE</span>
+            <div class="bar-track-t"><div class="bar-fill-t safe-fill" id="legitBar"></div></div>
+            <span class="bar-pct-t" id="legitPct">–</span>
+          </div>
+        </div>
+
+        <div class="reasoning-block" id="linkReasoning">
+          <strong>ANALYSIS</strong>
+          <span id="linkReasoningText"></span>
+        </div>
+
+        <div class="signals-section">
+          <div class="score-title">DETECTED SIGNALS</div>
+          <div class="signal-tags" id="linkSignals"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ PROFILE IDENTIFIER ═══════════════════ -->
+    <div class="tool-panel" id="panel-profile">
+      <div class="tcard">
+        <div class="tcard-title"><span class="t-icon">👤</span> Fake Profile / Bot Identifier</div>
+
+        <div class="profile-form" id="profileForm">
+          <div>
+            <div class="field-label">USERNAME / HANDLE</div>
+            <input type="text" id="pUsername" placeholder="@username or display name" />
+          </div>
+          <div>
+            <div class="field-label">PLATFORM</div>
+            <select id="pPlatform">
+              <option value="">Select platform…</option>
+              <option>Twitter / X</option>
+              <option>Instagram</option>
+              <option>Facebook</option>
+              <option>LinkedIn</option>
+              <option>TikTok</option>
+              <option>Reddit</option>
+              <option>YouTube</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div>
+            <div class="field-label">ACCOUNT AGE</div>
+            <input type="text" id="pAge" placeholder="e.g. 3 days, 2 months, 5 years" />
+          </div>
+          <div>
+            <div class="field-label">FOLLOWERS / FOLLOWING</div>
+            <input type="text" id="pFollowers" placeholder="e.g. 12 followers, 8,000 following" />
+          </div>
+          <div>
+            <div class="field-label">POST COUNT</div>
+            <input type="text" id="pPosts" placeholder="e.g. 2 posts, 45,000 tweets" />
+          </div>
+          <div>
+            <div class="field-label">PROFILE PHOTO</div>
+            <select id="pPhoto">
+              <option value="">Not specified</option>
+              <option>Real-looking photo</option>
+              <option>AI-generated / perfect face</option>
+              <option>Stock photo feel</option>
+              <option>No photo / default avatar</option>
+              <option>Logo or object</option>
+              <option>Celebrity / public figure</option>
+            </select>
+          </div>
+          <div class="full">
+            <div class="field-label">BIO / DESCRIPTION</div>
+            <textarea id="pBio" rows="2" placeholder="Paste the account bio here…"></textarea>
+          </div>
+          <div class="full">
+            <div class="field-label">SAMPLE POSTS / COMMENTS (optional — paste a few)</div>
+            <textarea id="pPosts2" rows="3" placeholder="Paste 1–3 sample posts or comments…"></textarea>
+          </div>
+          <div class="full">
+            <div class="field-label">ANY OTHER OBSERVATIONS</div>
+            <textarea id="pOther" rows="2" placeholder="e.g. posts only at 3am, responds instantly, uses identical phrasing to other accounts…"></textarea>
+          </div>
+        </div>
+
+        <div class="btn-tool-row">
+          <button class="btn-tool" id="profileBtn" onclick="analyseProfile()">
+            <div class="tool-spinner" id="profileSpinner"></div>
+            <span id="profileBtnText">Analyse Profile →</span>
+          </button>
+        </div>
+
+        <div class="tool-error" id="profileError"></div>
+      </div>
+
+      <!-- Profile result -->
+      <div class="tool-result" id="profileResult">
+        <div class="verdict-row-tool">
+          <div class="verdict-chip-tool" id="profileChip">
+            <span id="profileChipIcon">?</span>
+            <span id="profileChipText">–</span>
+          </div>
+          <div class="conf-block-tool">
+            <div class="clabel">CONFIDENCE</div>
+            <div class="cval" id="profileConf">–</div>
+          </div>
+        </div>
+
+        <div class="profile-summary" id="profileSummary"></div>
+
+        <div class="score-section">
+          <div class="score-title">PROBABILITY BREAKDOWN</div>
+          <div class="bar-row-t">
+            <span class="bar-lbl-t">FAKE / BOT</span>
+            <div class="bar-track-t"><div class="bar-fill-t danger-fill" id="fakeProfileBar"></div></div>
+            <span class="bar-pct-t" id="fakeProfilePct">–</span>
+          </div>
+          <div class="bar-row-t">
+            <span class="bar-lbl-t">SUSPICIOUS</span>
+            <div class="bar-track-t"><div class="bar-fill-t warn-fill" id="suspProfileBar"></div></div>
+            <span class="bar-pct-t" id="suspProfilePct">–</span>
+          </div>
+          <div class="bar-row-t">
+            <span class="bar-lbl-t">AUTHENTIC</span>
+            <div class="bar-track-t"><div class="bar-fill-t safe-fill" id="realProfileBar"></div></div>
+            <span class="bar-pct-t" id="realProfilePct">–</span>
+          </div>
+        </div>
+
+        <div class="reasoning-block" id="profileReasoning">
+          <strong>ANALYSIS</strong>
+          <span id="profileReasoningText"></span>
+        </div>
+
+        <div class="signals-section">
+          <div class="score-title">RED FLAGS DETECTED</div>
+          <div class="signal-tags" id="profileSignals"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /tool-panels -->
+
+  <footer>
+    <div class="footer-logo">◈ TruthGuard</div>
+    <p>Powered by heuristic analysis + Gemini AI · Flask REST API · Built with intent</p>
+  </footer>
+
+  <script>
+  // ── Tab switching ─────────────────────────────────────────
+  function switchTab(tab) {
+    document.querySelectorAll('.tool-tab').forEach((t, i) => {
+      t.classList.toggle('active', ['link','profile'][i] === tab);
+    });
+    document.getElementById('panel-link').classList.toggle('active', tab === 'link');
+    document.getElementById('panel-profile').classList.toggle('active', tab === 'profile');
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // LINK DETECTOR
+  // ═══════════════════════════════════════════════════════
+  async function analyseLink() {
+    const url = document.getElementById('urlInput').value.trim();
+    if (!url) { showErr('linkError', 'Please enter a URL to scan.'); return; }
+
+    const btn     = document.getElementById('linkBtn');
+    const spinner = document.getElementById('linkSpinner');
+    const btnText = document.getElementById('linkBtnText');
+    const result  = document.getElementById('linkResult');
+
+    hideErr('linkError');
+    result.classList.remove('visible');
+    btn.disabled = true;
+    spinner.classList.add('visible');
+    btnText.textContent = 'Scanning…';
+
+    try {
+      const res  = await fetch('/api/detect-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showErr('linkError', data.error || 'Scan failed.'); return; }
+      renderLinkResult(data);
+    } catch (e) {
+      showErr('linkError', 'Network error — could not reach the server.');
+    } finally {
+      btn.disabled = false;
+      spinner.classList.remove('visible');
+      btnText.textContent = 'Scan URL →';
+    }
+  }
+
+  function renderLinkResult(d) {
+    const chip = document.getElementById('linkChip');
+    chip.className = 'verdict-chip-tool';
+    const verdict = d.verdict; // "PHISHING" | "SUSPICIOUS" | "SAFE"
+    if (verdict === 'PHISHING') {
+      chip.classList.add('chip-danger');
+      document.getElementById('linkChipIcon').textContent = '⚠';
+      document.getElementById('linkChipText').textContent = 'PHISHING / FAKE';
+    } else if (verdict === 'SUSPICIOUS') {
+      chip.classList.add('chip-warn');
+      document.getElementById('linkChipIcon').textContent = '~';
+      document.getElementById('linkChipText').textContent = 'SUSPICIOUS';
+    } else {
+      chip.classList.add('chip-safe');
+      document.getElementById('linkChipIcon').textContent = '✓';
+      document.getElementById('linkChipText').textContent = 'LOOKS SAFE';
+    }
+
+    document.getElementById('linkConf').textContent = (d.risk_score * 100).toFixed(0) + '%';
+
+    // URL parts breakdown
+    const parts = document.getElementById('urlParts');
+    parts.innerHTML = '';
+    if (d.url_parts) {
+      Object.entries(d.url_parts).forEach(([k, v]) => {
+        if (!v) return;
+        const isFlagged = d.flagged_parts && d.flagged_parts.includes(k);
+        const el = document.createElement('span');
+        el.className = 'url-part' + (isFlagged ? ' flagged' : '');
+        el.innerHTML = `<span class="pk">${k}: </span><span class="pv">${escHtml(String(v))}</span>`;
+        parts.appendChild(el);
+      });
+    }
+
+    // Bars
+    requestAnimationFrame(() => {
+      setBar('phishBar', 'phishPct', d.scores.phishing);
+      setBar('suspBar',  'suspPct',  d.scores.suspicious);
+      setBar('legitBar', 'legitPct', d.scores.legitimate);
+    });
+
+    document.getElementById('linkReasoningText').textContent = d.reasoning || 'No additional analysis.';
+
+    const tags = document.getElementById('linkSignals');
+    tags.innerHTML = '';
+    (d.signals || []).forEach(sig => {
+      const t = document.createElement('span');
+      t.className = 'stag stag-danger';
+      t.textContent = sig;
+      tags.appendChild(t);
+    });
+    if (!d.signals || d.signals.length === 0) {
+      tags.innerHTML = '<span class="no-signals">No specific signals detected.</span>';
+    }
+
+    document.getElementById('linkResult').classList.add('visible');
+    document.getElementById('linkResult').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // PROFILE IDENTIFIER
+  // ═══════════════════════════════════════════════════════
+  async function analyseProfile() {
+    const payload = {
+      username:   document.getElementById('pUsername').value.trim(),
+      platform:   document.getElementById('pPlatform').value,
+      account_age: document.getElementById('pAge').value.trim(),
+      followers:  document.getElementById('pFollowers').value.trim(),
+      post_count: document.getElementById('pPosts').value.trim(),
+      photo_type: document.getElementById('pPhoto').value,
+      bio:        document.getElementById('pBio').value.trim(),
+      sample_posts: document.getElementById('pPosts2').value.trim(),
+      other:      document.getElementById('pOther').value.trim(),
+    };
+
+    if (!payload.username && !payload.bio && !payload.sample_posts) {
+      showErr('profileError', 'Please fill in at least the username/handle or bio.');
+      return;
+    }
+
+    const btn     = document.getElementById('profileBtn');
+    const spinner = document.getElementById('profileSpinner');
+    const btnText = document.getElementById('profileBtnText');
+    const result  = document.getElementById('profileResult');
+
+    hideErr('profileError');
+    result.classList.remove('visible');
+    btn.disabled = true;
+    spinner.classList.add('visible');
+    btnText.textContent = 'Analysing…';
+
+    try {
+      const res  = await fetch('/api/detect-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) { showErr('profileError', data.error || 'Analysis failed.'); return; }
+      renderProfileResult(data, payload);
+    } catch (e) {
+      showErr('profileError', 'Network error — could not reach the server.');
+    } finally {
+      btn.disabled = false;
+      spinner.classList.remove('visible');
+      btnText.textContent = 'Analyse Profile →';
+    }
+  }
+
+  function renderProfileResult(d, payload) {
+    const chip = document.getElementById('profileChip');
+    chip.className = 'verdict-chip-tool';
+    const verdict = d.verdict; // "FAKE" | "BOT" | "SUSPICIOUS" | "AUTHENTIC"
+    if (verdict === 'FAKE' || verdict === 'BOT') {
+      chip.classList.add('chip-danger');
+      document.getElementById('profileChipIcon').textContent = '⚠';
+      document.getElementById('profileChipText').textContent = verdict === 'BOT' ? 'LIKELY BOT' : 'LIKELY FAKE';
+    } else if (verdict === 'SUSPICIOUS') {
+      chip.classList.add('chip-warn');
+      document.getElementById('profileChipIcon').textContent = '~';
+      document.getElementById('profileChipText').textContent = 'SUSPICIOUS';
+    } else {
+      chip.classList.add('chip-safe');
+      document.getElementById('profileChipIcon').textContent = '✓';
+      document.getElementById('profileChipText').textContent = 'LIKELY AUTHENTIC';
+    }
+
+    document.getElementById('profileConf').textContent = (d.confidence * 100).toFixed(1) + '%';
+
+    // Profile summary cards
+    const summary = document.getElementById('profileSummary');
+    summary.innerHTML = '';
+    const fields = [
+      ['Username', payload.username],
+      ['Platform', payload.platform],
+      ['Account Age', payload.account_age],
+      ['Followers/Following', payload.followers],
+      ['Post Count', payload.post_count],
+      ['Photo Type', payload.photo_type],
+    ];
+    fields.forEach(([k, v]) => {
+      if (!v) return;
+      summary.innerHTML += `<div class="ps-item"><div class="ps-k">${k}</div><div class="ps-v">${escHtml(v)}</div></div>`;
+    });
+
+    requestAnimationFrame(() => {
+      setBar('fakeProfileBar',  'fakeProfilePct',  d.scores.fake);
+      setBar('suspProfileBar',  'suspProfilePct',  d.scores.suspicious);
+      setBar('realProfileBar',  'realProfilePct',  d.scores.authentic);
+    });
+
+    document.getElementById('profileReasoningText').textContent = d.reasoning || '';
+
+    const tags = document.getElementById('profileSignals');
+    tags.innerHTML = '';
+    (d.signals || []).forEach(sig => {
+      const t = document.createElement('span');
+      const isWarn = sig.toLowerCase().includes('possibly') || sig.toLowerCase().includes('could');
+      t.className = 'stag ' + (d.verdict === 'AUTHENTIC' ? 'stag-safe' : (isWarn ? 'stag-warn' : 'stag-danger'));
+      t.textContent = sig;
+      tags.appendChild(t);
+    });
+    if (!d.signals || d.signals.length === 0) {
+      tags.innerHTML = '<span class="no-signals">No red flags detected.</span>';
+    }
+
+    document.getElementById('profileResult').classList.add('visible');
+    document.getElementById('profileResult').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ── Helpers ───────────────────────────────────────────────
+  function setBar(barId, pctId, val) {
+    const pct = ((val || 0) * 100).toFixed(1);
+    document.getElementById(barId).style.width = pct + '%';
+    document.getElementById(pctId).textContent = pct + '%';
+  }
+  function showErr(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = '⚠  ' + msg;
+    el.classList.add('visible');
+  }
+  function hideErr(id) { document.getElementById(id).classList.remove('visible'); }
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // Allow Enter in URL input
+  document.getElementById('urlInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') analyseLink();
+  });
+  </script>
+
+  <script src="{{ url_for('static', filename='i18n.js') }}"></script>
+</body>
+</html>

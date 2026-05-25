@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TruthGuard</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0a0a0e;
+      --surface:  rgba(255,255,255,0.04);
+      --surface2: rgba(255,255,255,0.07);
+      --border:   rgba(255,255,255,0.08);
+      --border2:  rgba(255,255,255,0.12);
+      --text:     rgba(255,255,255,0.92);
+      --text-mid: rgba(255,255,255,0.55);
+      --text-dim: rgba(255,255,255,0.28);
+      --accent:   #00e5ff;
+      --purple:   #a78bfa;
+      --fake:     #ff3d5a;
+      --real:     #00e5a0;
+      --yellow:   #ffd166;
+      --mono:     'DM Mono', 'Courier New', monospace;
+      --head:     'Syne', system-ui, sans-serif;
+      --body:     'DM Sans', system-ui, sans-serif;
+    }
+
+    html { width: 400px; }
+    body {
+      width: 400px;
+      min-height: 560px;
+      max-height: 640px;
+      overflow-y: auto;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--body);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    /* scrollbar */
+    body::-webkit-scrollbar { width: 4px; }
+    body::-webkit-scrollbar-track { background: transparent; }
+    body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+    /* ── Header ── */
+    .popup-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px 10px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0,0,0,0.3);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .popup-logo {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: 1rem;
+      letter-spacing: -0.02em;
+    }
+    .popup-logo .logo-gem { color: var(--accent); font-size: 1.1rem; }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #555;
+      flex-shrink: 0;
+    }
+    .status-dot.online  { background: var(--real); box-shadow: 0 0 6px var(--real); }
+    .status-dot.offline { background: var(--fake); }
+
+    /* ── Tab bar ── */
+    .tab-bar {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0,0,0,0.2);
+      overflow-x: auto;
+    }
+    .tab-bar::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      flex: 1;
+      min-width: 80px;
+      padding: 8px 4px 7px;
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.18s;
+      text-align: center;
+      line-height: 1.3;
+    }
+    .tab-btn:hover { color: var(--text-mid); background: rgba(255,255,255,0.03); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(0,229,255,0.04); }
+    .tab-btn .tab-icon { display: block; font-size: 1rem; margin-bottom: 2px; }
+
+    /* ── Panel ── */
+    .panel { display: none; padding: 14px; }
+    .panel.active { display: block; }
+
+    /* ── Section label ── */
+    .section-label {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    /* ── Textarea / Input ── */
+    textarea, input[type="text"] {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--body);
+      font-size: 0.82rem;
+      padding: 9px 11px;
+      outline: none;
+      resize: vertical;
+      transition: border-color 0.18s;
+    }
+    textarea:focus, input[type="text"]:focus { border-color: var(--accent); }
+    textarea::placeholder, input::placeholder { color: var(--text-dim); }
+    select {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--body);
+      font-size: 0.82rem;
+      padding: 8px 10px;
+      outline: none;
+      transition: border-color 0.18s;
+      cursor: pointer;
+    }
+    select:focus { border-color: var(--accent); }
+    select option { background: #111; color: var(--text); }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      width: 100%;
+      margin-top: 9px;
+      padding: 9px 14px;
+      background: var(--accent);
+      color: #050912;
+      border: none;
+      border-radius: 8px;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      transition: all 0.18s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn-primary:hover { background: #33ecff; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.4; pointer-events: none; }
+    .btn-primary.purple { background: var(--purple); color: #0a0414; }
+    .btn-primary.purple:hover { background: #c4b5fd; }
+
+    .btn-secondary {
+      width: 100%;
+      margin-top: 7px;
+      padding: 7px 12px;
+      background: var(--surface);
+      color: var(--text-mid);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .btn-secondary:hover { border-color: var(--border2); color: var(--text); }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 13px; height: 13px;
+      border: 2px solid rgba(0,0,0,0.2);
+      border-top-color: #050912;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+      flex-shrink: 0;
+    }
+    .spinner.visible { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Result card ── */
+    .result-card {
+      display: none;
+      margin-top: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      animation: fadeUp 0.25s ease;
+    }
+    .result-card.visible { display: block; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Verdict strip */
+    .verdict-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+    }
+    .verdict-strip.fake    { background: rgba(255,61,90,0.12);  border-bottom: 1px solid rgba(255,61,90,0.2); }
+    .verdict-strip.real    { background: rgba(0,229,160,0.09);  border-bottom: 1px solid rgba(0,229,160,0.18); }
+    .verdict-strip.warn    { background: rgba(255,209,102,0.1); border-bottom: 1px solid rgba(255,209,102,0.2); }
+    .verdict-strip.neutral { background: rgba(255,255,255,0.04); border-bottom: 1px solid var(--border); }
+
+    .verdict-label-ext {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--head);
+      font-weight: 800;
+      font-size: 0.88rem;
+      letter-spacing: 0.02em;
+    }
+    .verdict-label-ext.fake { color: var(--fake); }
+    .verdict-label-ext.real { color: var(--real); }
+    .verdict-label-ext.warn { color: var(--yellow); }
+
+    .conf-pill {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      color: var(--text-mid);
+    }
+
+    /* Result body */
+    .result-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 9px; }
+
+    /* Mini bars */
+    .mini-bars { display: flex; flex-direction: column; gap: 5px; }
+    .mini-bar-row { display: flex; align-items: center; gap: 7px; }
+    .mini-bar-lbl {
+      font-family: var(--mono); font-size: 0.6rem;
+      color: var(--text-dim); width: 72px; flex-shrink: 0;
+    }
+    .mini-bar-track {
+      flex: 1; height: 4px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 2px; overflow: hidden;
+    }
+    .mini-bar-fill {
+      height: 100%; border-radius: 2px; width: 0;
+      transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+    }
+    .fill-fake    { background: var(--fake); }
+    .fill-real    { background: var(--real); }
+    .fill-warn    { background: var(--yellow); }
+    .fill-purple  { background: var(--purple); }
+    .mini-bar-pct {
+      font-family: var(--mono); font-size: 0.6rem;
+      color: var(--text-dim); width: 30px; text-align: right;
+    }
+
+    /* Reasoning */
+    .reasoning-box {
+      font-size: 0.77rem;
+      color: var(--text-mid);
+      line-height: 1.55;
+      padding: 7px 9px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+    }
+
+    /* Signal tags */
+    .sig-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+    .sig-tag {
+      font-family: var(--mono); font-size: 0.62rem;
+      padding: 2px 7px; border-radius: 4px;
+    }
+    .sig-fake { background: rgba(255,61,90,0.1);   color: var(--fake);   border: 1px solid rgba(255,61,90,0.2); }
+    .sig-warn { background: rgba(255,209,102,0.1); color: var(--yellow); border: 1px solid rgba(255,209,102,0.2); }
+    .sig-safe { background: rgba(0,229,160,0.09);  color: var(--real);   border: 1px solid rgba(0,229,160,0.18); }
+    .sig-none { font-size: 0.75rem; color: var(--text-dim); }
+
+    /* URL breakdown */
+    .url-parts { display: flex; flex-wrap: wrap; gap: 4px; }
+    .url-part {
+      font-family: var(--mono); font-size: 0.62rem;
+      padding: 2px 6px; border-radius: 4px;
+      background: var(--surface); border: 1px solid var(--border);
+    }
+    .url-part .pk { color: var(--text-dim); }
+    .url-part .pv { color: var(--accent); }
+    .url-part.flagged .pv { color: var(--fake); }
+
+    /* Error */
+    .error-box {
+      display: none;
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: 7px;
+      background: rgba(255,61,90,0.08);
+      border: 1px solid rgba(255,61,90,0.2);
+      color: var(--fake);
+      font-size: 0.77rem;
+      line-height: 1.4;
+    }
+    .error-box.visible { display: block; }
+
+    /* ── Page scan strip ── */
+    .page-scan-strip {
+      margin-bottom: 10px;
+      padding: 9px 11px;
+      background: rgba(0,229,255,0.05);
+      border: 1px solid rgba(0,229,255,0.12);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .page-scan-info {
+      font-size: 0.75rem;
+      color: var(--text-mid);
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .page-scan-badge {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      flex-shrink: 0;
+      font-weight: 600;
+    }
+    .badge-fake { background: rgba(255,61,90,0.15); color: var(--fake); }
+    .badge-real { background: rgba(0,229,160,0.12); color: var(--real); }
+    .badge-warn { background: rgba(255,209,102,0.12); color: var(--yellow); }
+    .badge-none { background: var(--surface); color: var(--text-dim); }
+
+    /* ── Profile form grid ── */
+    .profile-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+    }
+    .profile-grid .full { grid-column: 1 / -1; }
+    .field-label {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.07em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+
+    /* ── Footer links ── */
+    .popup-footer {
+      padding: 10px 14px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .footer-link {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      text-decoration: none;
+      letter-spacing: 0.05em;
+      transition: color 0.18s;
+    }
+    .footer-link:hover { color: var(--accent); }
+
+    /* ── Divider ── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 10px 0;
+    }
+
+    /* ── Mode toggle bar ── */
+    .mode-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      background: rgba(0,0,0,0.25);
+      border-bottom: 1px solid var(--border);
+    }
+    .mode-label {
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .mode-pills {
+      display: flex;
+      gap: 4px;
+      flex: 1;
+    }
+    .mode-pill {
+      flex: 1;
+      padding: 4px 6px;
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.04em;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      background: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .mode-pill:hover { color: var(--text-mid); border-color: var(--border2); }
+    .mode-pill.active-on     { background: rgba(0,229,160,0.12); color: var(--real);   border-color: rgba(0,229,160,0.3); }
+    .mode-pill.active-manual { background: rgba(0,229,255,0.08); color: var(--accent); border-color: rgba(0,229,255,0.25); }
+    .mode-pill.active-off    { background: rgba(255,61,90,0.1);  color: var(--fake);   border-color: rgba(255,61,90,0.25); }
+
+    /* Dim all panels when disabled */
+    body.mode-off .tab-bar,
+    body.mode-off .panel {
+      opacity: 0.45;
+      pointer-events: none;
+    }
+    body.mode-off .mode-bar { opacity: 1; pointer-events: all; }
+    .disabled-notice {
+      display: none;
+      margin: 10px 14px 0;
+      padding: 8px 10px;
+      border-radius: 7px;
+      background: rgba(255,61,90,0.07);
+      border: 1px solid rgba(255,61,90,0.18);
+      color: var(--fake);
+      font-size: 0.75rem;
+      font-family: var(--mono);
+      letter-spacing: 0.03em;
+    }
+    body.mode-off .disabled-notice { display: block; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="popup-header">
+    <div class="popup-logo">
+      <span class="logo-gem">◈</span>
+      TruthGuard
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span style="font-family:var(--mono);font-size:0.6rem;color:var(--text-dim);" id="statusLabel">checking…</span>
+      <div class="status-dot" id="statusDot"></div>
+    </div>
+  </div>
+
+  <!-- Mode toggle -->
+  <div class="mode-bar">
+    <span class="mode-label">Mode</span>
+    <div class="mode-pills">
+      <button class="mode-pill" id="modeOn">⚡ Always On</button>
+      <button class="mode-pill" id="modeManual">🎯 Manual</button>
+      <button class="mode-pill" id="modeOff">⛔ Disabled</button>
+    </div>
+  </div>
+
+  <div class="disabled-notice">TruthGuard is disabled — switch to Manual or Always On to use it.</div>
+
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="news">
+      <span class="tab-icon">📰</span>NEWS
+    </button>
+    <button class="tab-btn" data-tab="link">
+      <span class="tab-icon">🔗</span>LINK
+    </button>
+    <button class="tab-btn" data-tab="profile">
+      <span class="tab-icon">👤</span>PROFILE
+    </button>
+    <button class="tab-btn" data-tab="page">
+      <span class="tab-icon">🌐</span>PAGE
+    </button>
+  </div>
+
+  <!-- ══════════════════ NEWS TAB ══════════════════ -->
+  <div class="panel active" id="tab-news">
+    <div class="section-label">Paste article or claim</div>
+    <textarea id="newsText" rows="5"
+      placeholder="Paste any headline, article, or claim to check…"></textarea>
+    <button class="btn-primary" id="newsBtn">
+      <div class="spinner" id="newsSpinner"></div>
+      <span id="newsBtnText">Analyse Text →</span>
+    </button>
+    <div class="error-box" id="newsError"></div>
+    <div class="result-card" id="newsResult">
+      <div class="verdict-strip neutral" id="newsStrip">
+        <div class="verdict-label-ext" id="newsVerdict">–</div>
+        <span class="conf-pill" id="newsConf">–</span>
+      </div>
+      <div class="result-body">
+        <div class="mini-bars">
+          <div class="mini-bar-row">
+            <span class="mini-bar-lbl">FAKE</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill fill-fake" id="nFakeBar"></div></div>
+            <span class="mini-bar-pct" id="nFakePct">–</span>
+          </div>
+          <div class="mini-bar-row">
+            <span class="mini-bar-lbl">REAL</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill fill-real" id="nRealBar"></div></div>
+            <span class="mini-bar-pct" id="nRealPct">–</span>
+          </div>
+        </div>
+        <div class="reasoning-box" id="newsReasoning" style="display:none;"></div>
+        <div>
+          <div class="section-label">Source</div>
+          <span style="font-family:var(--mono);font-size:0.65rem;color:var(--text-dim);" id="newsSource">–</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ LINK TAB ══════════════════ -->
+  <div class="panel" id="tab-link">
+    <div class="section-label">Paste a URL to scan</div>
+    <input type="text" id="linkUrl"
+      placeholder="https://suspicious-login.xyz/verify?token=…" />
+    <p style="margin-top:5px;font-size:0.72rem;color:var(--text-dim);">
+      Nothing is visited or opened. Safe to paste any link.
+    </p>
+    <button class="btn-primary purple" id="linkBtn">
+      <div class="spinner" id="linkSpinner" style="border-top-color:#0a0414;"></div>
+      <span id="linkBtnText">Scan URL →</span>
+    </button>
+    <div class="error-box" id="linkError"></div>
+    <div class="result-card" id="linkResult">
+      <div class="verdict-strip neutral" id="linkStrip">
+        <div class="verdict-label-ext" id="linkVerdict">–</div>
+        <span class="conf-pill" id="linkConf">–</span>
+      </div>
+      <div class="result-body">
+        <div>
+          <div class="section-label">URL Breakdown</div>
+          <div class="url-parts" id="linkParts"></div>
+        </div>
+        <div class="mini-bars">
+          <div class="mini-bar-row">
+            <span class="mini-bar-lbl">PHISHING</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill fill-fake" id="lPhishBar"></div></div>
+            <span class="mini-bar-pct" id="lPhishPct">–</span>
+          </div>
+          <div class="mini-bar-row">
+            <span class="mini-bar-lbl">SUSPICIOUS</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill fill-warn" id="lSuspBar"></div></div>
+            <span class="mini-bar-pct" id="lSuspPct">–</span>
+          </div>
+          <div class="mini-bar-row">
+            <span class="mini-bar-lbl">LEGITIMATE</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill fill-real" id="lLegitBar"></div></div>
+            <span class="mini-bar-pct" id="lLegitPct">–</span>
+          </div>
+        </div>
+        <div class="reasoning-box" id="linkReasoning" style="display:none;"></div>
+        <div>
+          <div class="section-label">Signals</div>
+          <div class="sig-tags" id="linkSignals"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ PROFILE TAB ══════════════════ -->
+  <div class="panel" id="tab-profile">
+    <div class="section-label">Profile details</div>
+    <div class="profile-grid">
+      <div>
+        <div class="field-label">Username / Handle</div>
+        <input type="text" id="pUsername" placeholder="@username" />
+      </div>
+      <div>
+        <div class="field-label">Platform</div>
+        <select id="pPlatform">
+          <option value="">Select…</option>
+          <option>Twitter / X</option>
+          <option>Instagram</option>
+          <option>Facebook</option>
+          <option>LinkedIn</option>
+          <option>TikTok</option>
+          <option>Reddit</option>
+          <option>YouTube</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div>
+        <div class="field-label">Account Age</div>
+        <input type="text" id="pAge" placeholder="e.g. 3 days, 2 years" />
+      </div>
+      <div>
+        <div class="field-label">Followers / Following</div>
+        <input type="text" id="pFollowers" placeholder="e.g. 12 / 8,000" />
+      </div>
+      <div>
+        <div class="field-label">Post Count</div>
+        <input type="text" id="pPosts" placeholder="e.g. 2 posts" />
+      </div>
+      <div>
+        <div class="field-label">Profile Photo</div>
+        <select id="pPhoto">
+          <option value="">Not specified</option>
+          <option>Real-looking photo</option>
+          <option>AI-generated / perfect face</option>
+          <option>Stock photo feel</option>
+          <option>No photo / default avatar</option>
+          <option>Celebrity / public figure</option>
+        </select>
+      </div>
+      <div class="full">
+        <div class="field-label">Bio / Description</div>
+        <textarea id="pBio" rows="2" placeholder="Paste the account bio…"></textarea>
+      </div>
+      <div class="full">
+        <div class="field-label">Sample Posts (optional)</div>
+        <textarea id="pSamplePosts" rows="2" placeholder="Paste 1–3 posts or comments…"></textarea>
+      </div>
+      <div class="full">
+        <div class="field-label">Other Observations</div>
+        <textarea id="pOther" rows="1" placeholder="e.g. posts only at 3am, copy-paste replies…"></textarea>
+      </div>
+    </div>
+    <button class="btn-primary purple" id="profileBtn">
+      <div class="spinner" id="profileSpinner" style="border-top-color:#0a0414;"></div>
+      <span id="profileBtnText">Analyse Profile →</span>
+    </button>
+    <div class="error-box" id="profileError"></div>
+    <div class="result-card" id="profileResult">
+      <div class="verdict-strip neutral" id="profileStrip">
+        <div class="verdict-label-ext" id="profileVerdict">–</div>
+        <span class="conf-pill" id="profileConf">–</span>
+      </div>
+      <div class="result-body">
+        <div class="mini-bars">
+          <div class="mini-bar-row">
+            <span class="mini-bar-lbl">FAKE / BOT</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill fill-fake" id="pFakeBar"></div></div>
+            <span class="mini-bar-pct" id="pFakePct">–</span>
+          </div>
+          <div class="mini-bar-row">
+            <span class="mini-bar-lbl">SUSPICIOUS</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill fill-warn" id="pSuspBar"></div></div>
+            <span class="mini-bar-pct" id="pSuspPct">–</span>
+          </div>
+          <div class="mini-bar-row">
+            <span class="mini-bar-lbl">AUTHENTIC</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill fill-real" id="pAuthBar"></div></div>
+            <span class="mini-bar-pct" id="pAuthPct">–</span>
+          </div>
+        </div>
+        <div class="reasoning-box" id="profileReasoning" style="display:none;"></div>
+        <div>
+          <div class="section-label">Red Flags</div>
+          <div class="sig-tags" id="profileSignals"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ PAGE TAB ══════════════════ -->
+  <div class="panel" id="tab-page">
+    <!-- Current page scan strip -->
+    <div class="page-scan-strip">
+      <span class="page-scan-info" id="pageUrl">—</span>
+      <span class="page-scan-badge badge-none" id="pageBadge">Not scanned</span>
+    </div>
+
+    <button class="btn-primary" id="pageBtn">
+      <div class="spinner" id="pageSpinner"></div>
+      <span id="pageBtnText">Scan This Page →</span>
+    </button>
+    <button class="btn-secondary" id="highlightLinksBtn">
+      🔗 Highlight Suspicious Links
+    </button>
+    <button class="btn-secondary" id="removeBannerBtn">
+      ✕ Remove Warning Banner
+    </button>
+
+    <div class="error-box" id="pageError"></div>
+    <div class="result-card" id="pageResult">
+      <div class="verdict-strip neutral" id="pageStrip">
+        <div class="verdict-label-ext" id="pageVerdict">–</div>
+        <span class="conf-pill" id="pageConf">–</span>
+      </div>
+      <div class="result-body">
+        <div class="mini-bars">
+          <div class="mini-bar-row">
+            <span class="mini-bar-lbl">FAKE</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill fill-fake" id="pgFakeBar"></div></div>
+            <span class="mini-bar-pct" id="pgFakePct">–</span>
+          </div>
+          <div class="mini-bar-row">
+            <span class="mini-bar-lbl">REAL</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill fill-real" id="pgRealBar"></div></div>
+            <span class="mini-bar-pct" id="pgRealPct">–</span>
+          </div>
+        </div>
+        <div class="reasoning-box" id="pageReasoning" style="display:none;"></div>
+        <div>
+          <div class="section-label">Detection Source</div>
+          <span style="font-family:var(--mono);font-size:0.65rem;color:var(--text-dim);" id="pageSource">–</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="popup-footer">
+    <a class="footer-link" href="http://localhost:5000" target="_blank">Open TruthGuard ↗</a>
+    <a class="footer-link" href="http://localhost:5000/media-detect" target="_blank">Media Detector ↗</a>
+    <a class="footer-link" href="http://localhost:5000/tools" target="_blank">Tools ↗</a>
+    <a class="footer-link" href="http://localhost:5000/api/status" target="_blank">API Status ↗</a>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

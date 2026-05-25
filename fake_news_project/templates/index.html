@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TruthGuard — Fake News Detector</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <style>
+    .media-detect-link {
+      display: inline-block;
+      margin-top: 1.2rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.82rem;
+      color: rgba(167, 139, 250, 0.8);
+      text-decoration: none;
+      border: 1px solid rgba(167, 139, 250, 0.25);
+      border-radius: 8px;
+      padding: 0.45rem 1rem;
+      transition: all 0.2s;
+      background: rgba(167, 139, 250, 0.06);
+    }
+    .media-detect-link:hover {
+      background: rgba(167, 139, 250, 0.14);
+      border-color: rgba(167, 139, 250, 0.5);
+      color: #a78bfa;
+    }
+
+    /* ── Fake News Alert Banner ─────────────────────────── */
+    .fake-banner {
+      position: fixed;
+      top: -160px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      width: min(560px, 94vw);
+      background: #1a0a0a;
+      border: 2px solid #f87171;
+      border-radius: 16px;
+      padding: 1.25rem 1.5rem 1rem;
+      box-shadow: 0 8px 40px rgba(248,113,113,0.35);
+      transition: top 0.45s cubic-bezier(0.34,1.56,0.64,1);
+      pointer-events: none;
+    }
+    .fake-banner.visible {
+      top: 80px;
+      pointer-events: auto;
+    }
+    .fake-banner-inner {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .fake-banner-icon {
+      font-size: 2rem;
+      line-height: 1;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .fake-banner-body { flex: 1; }
+    .fake-banner-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #f87171;
+      margin-bottom: 0.3rem;
+      letter-spacing: -0.01em;
+    }
+    .fake-banner-sub {
+      font-size: 0.88rem;
+      color: rgba(255,255,255,0.75);
+      line-height: 1.4;
+    }
+    .fake-banner-footer {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 0.85rem;
+    }
+    .fake-banner-progress-track {
+      flex: 1;
+      height: 4px;
+      background: rgba(248,113,113,0.2);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .fake-banner-progress-fill {
+      height: 100%;
+      width: 100%;
+      background: #f87171;
+      border-radius: 4px;
+      transition: width 1s linear;
+    }
+    .fake-banner-dismiss-hint {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.4);
+      white-space: nowrap;
+    }
+    .fake-banner-close {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.4);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      transition: color 0.2s;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .fake-banner-close:hover { color: #f87171; }
+
+    /* UNCERTAIN verdict style */
+    .verdict-badge.is-uncertain {
+      background: rgba(251,191,36,0.12);
+      border-color: rgba(251,191,36,0.4);
+      color: #fbbf24;
+    }
+
+    /* Result note (e.g. social media skip message) */
+    #resultNote {
+      display: none;
+      margin-top: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      background: rgba(167,139,250,0.08);
+      border: 1px solid rgba(167,139,250,0.2);
+      border-radius: 8px;
+      font-size: 0.83rem;
+      color: rgba(167,139,250,0.85);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background grid -->
+  <div class="bg-grid"></div>
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+
+  <!-- Fake News Alert Banner (auto-dismisses after 20s) -->
+  <div class="fake-banner" id="fakeBanner" role="alert" aria-live="assertive">
+    <div class="fake-banner-inner">
+      <div class="fake-banner-icon">⚠️</div>
+      <div class="fake-banner-body">
+        <div class="fake-banner-title">Warning — This may be FAKE news</div>
+        <div class="fake-banner-sub">Our AI has flagged this content as likely misinformation. Please check a trusted news source before sharing.</div>
+      </div>
+      <button class="fake-banner-close" onclick="_clearFakeBanner()" aria-label="Dismiss">✕</button>
+    </div>
+    <div class="fake-banner-footer">
+      <div class="fake-banner-progress-track">
+        <div class="fake-banner-progress-fill" id="fakeBannerProgress"></div>
+      </div>
+      <div class="fake-banner-dismiss-hint">Closes in <span id="fakeBannerCountdown">20</span>s</div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <span class="logo-icon">◈</span>
+      <span>TruthGuard</span>
+    </div>
+    <nav>
+      <a href="/media-detect" data-i18n="nav_media">Media Detector</a>
+      <a href="/tools">Tools</a>
+      <a href="/how-it-works" data-i18n="nav_how">How it works</a>
+      <a href="/about" data-i18n="nav_about">About</a>
+      <a href="/api/detect" target="_blank" class="nav-api" data-i18n="nav_api">API</a>
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-label" data-i18n="hero_label">AI-Powered Verification</div>
+    <h1><span data-i18n="hero_h1a">Is this news</span><br /><em data-i18n="hero_h1b">real</em> <span data-i18n="hero_h1c">or fake?</span></h1>
+    <p class="hero-sub" data-i18n="hero_sub">Paste any article, headline, or claim and our model will analyse it in seconds.</p>
+    <a href="/media-detect" class="media-detect-link" data-i18n="hero_media_btn">🖼 Also detect AI-generated images &amp; videos →</a>
+    <a href="/tools" class="media-detect-link" style="margin-top:0.5rem;">🔗 Fake Link &amp; Profile Detector →</a>
+  </section>
+
+  <!-- Detector Card -->
+  <section class="detector-wrapper">
+    <div class="detector-card" id="detector">
+
+      <div class="card-header">
+        <span class="card-tag" data-i18n="card_tag">LIVE DETECTOR</span>
+        <span class="char-count" id="charCount">0 / 5000</span>
+      </div>
+
+      <textarea
+        id="newsInput"
+        data-i18n="textarea_ph"
+        placeholder="Paste a news article, headline, or any text you want to verify…"
+        maxlength="5000"
+        spellcheck="false"
+      ></textarea>
+
+      <div class="card-footer">
+        <button class="btn-analyse" id="analyseBtn" onclick="analyse()">
+          <span class="btn-text" data-i18n="btn_analyse">Analyse Text</span>
+          <span class="btn-icon">→</span>
+        </button>
+        <button class="btn-clear" onclick="clearAll()" data-i18n="btn_clear">Clear</button>
+      </div>
+
+      <!-- Result -->
+      <div class="result-panel" id="resultPanel">
+        <div class="result-inner">
+
+          <div class="verdict-row">
+            <div class="verdict-badge" id="verdictBadge">
+              <span class="verdict-icon" id="verdictIcon">?</span>
+              <span class="verdict-label" id="verdictLabel">–</span>
+            </div>
+            <div class="confidence-block">
+              <div class="conf-label" data-i18n="conf_label">Confidence</div>
+              <div class="conf-value" id="confValue">–</div>
+            </div>
+          </div>
+
+          <div class="score-bars">
+            <div class="bar-row">
+              <span class="bar-lbl">FAKE</span>
+              <div class="bar-track">
+                <div class="bar-fill fake-fill" id="fakeBar"></div>
+              </div>
+              <span class="bar-pct" id="fakePct">–</span>
+            </div>
+            <div class="bar-row">
+              <span class="bar-lbl">REAL</span>
+              <div class="bar-track">
+                <div class="bar-fill real-fill" id="realBar"></div>
+              </div>
+              <span class="bar-pct" id="realPct">–</span>
+            </div>
+          </div>
+
+          <div class="meta-row">
+            <div class="meta-item"><span id="wordCount">–</span><small data-i18n="words_label">words</small></div>
+            <div class="meta-item"><span id="charCountResult">–</span><small data-i18n="chars_label">chars</small></div>
+            <div class="meta-item"><span id="timeElapsed">–</span><small data-i18n="ms_label">ms</small></div>
+          </div>
+
+          <div id="resultNote"></div>
+
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div class="error-panel" id="errorPanel"></div>
+    </div>
+  </section>
+
+  <!-- Fake News Log -->
+  <section class="log-section">
+    <div class="log-header">
+      <div class="log-title-row">
+        <span class="log-icon">⚠</span>
+        <span class="log-title" data-i18n="log_title">Fake Detections</span>
+        <span class="log-count" id="fakeCount">0</span>
+      </div>
+      <button class="log-clear-btn" onclick="clearLog()" data-i18n="log_clear">Clear log</button>
+    </div>
+    <div class="log-empty" id="logEmpty" data-i18n="log_empty">No fake news detected yet. Results will appear here.</div>
+    <div class="log-list" id="logList"></div>
+  </section>
+
+  <!-- How it works -->
+  <section class="how-it-works" id="how-it-works">
+    <div class="section-label" data-i18n="hiw_label">METHODOLOGY</div>
+    <h2 data-i18n="hiw_title">How TruthGuard works</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <h3 data-i18n="step1_title">Text Ingestion</h3>
+        <p data-i18n="step1_desc">Your text is tokenised and pre-processed — stripping noise while preserving linguistic signals that matter.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <h3 data-i18n="step2_title">Model Inference</h3>
+        <p data-i18n="step2_desc">A fine-tuned transformer model analyses semantic patterns, sentiment bias, and factual inconsistencies.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <h3 data-i18n="step3_title">Confidence Scoring</h3>
+        <p data-i18n="step3_desc">The model returns a probability distribution across FAKE and REAL, giving you a clear, interpretable score.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- About -->
+  <section class="about" id="about">
+    <div class="section-label" data-i18n="about_label">ABOUT</div>
+    <div class="about-grid">
+      <div class="about-text">
+        <h2 data-i18n="about_h2">Built for the age of misinformation</h2>
+        <p data-i18n="about_p1">TruthGuard uses a state-of-the-art NLP model trained on thousands of verified news articles and known misinformation examples. It's designed for journalists, researchers, and curious readers who want a second opinion.</p>
+        <p data-i18n="about_p2">The system exposes a simple REST API so you can integrate fake-news detection directly into your own applications.</p>
+      </div>
+      <div class="api-snippet">
+        <div class="snippet-header">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <span class="snippet-title">POST /api/detect</span>
+        </div>
+        <pre><code><span class="kw">fetch</span>(<span class="str">'/api/detect'</span>, {
+  method: <span class="str">'POST'</span>,
+  headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span> },
+  body: JSON.stringify({ text: <span class="str">'...'</span> })
+})
+.<span class="kw">then</span>(r => r.json())
+.<span class="kw">then</span>(data => {
+  <span class="cmt">// data.label      → "FAKE" | "REAL"</span>
+  <span class="cmt">// data.confidence → 0.0 – 1.0</span>
+  <span class="cmt">// data.scores     → { fake, real }</span>
+});</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-logo">◈ TruthGuard</div>
+    <p data-i18n="footer_p">Powered by your trained model · Flask REST API · Built with intent</p>
+  </footer>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+  <script src="{{ url_for('static', filename='i18n.js') }}"></script>
+</body>
+</html>
